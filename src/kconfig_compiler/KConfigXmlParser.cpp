@@ -446,6 +446,7 @@ KConfigXmlParser::KConfigXmlParser(const KConfigParameters &cfg, const QString &
 void KConfigXmlParser::start()
 {
     QFile input(mInputFileName);
+    input.open(QIODevice::ReadOnly);
     QDomDocument doc;
     QString errorMsg;
     int errorRow;
