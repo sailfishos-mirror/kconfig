@@ -814,4 +814,9 @@ QString KConfigIniBackend::backingDevicePath() const
     return {};
 }
 
+std::unique_ptr<KConfigIniBackendAbstractDevice> KConfigIniBackend::cloneDeviceForWorker() const
+{
+    return mDeviceInterface->cloneForWorker();
+}
+
 #include "moc_kconfigini_p.cpp"

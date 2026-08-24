@@ -100,7 +100,6 @@ private:
     QFutureWatcher<bool> syncWatcher;
     KEntryMap syncSnapshot;
     bool syncPending = false;
-    bool syncQueued = false; // a QIODevice write is already deferred on the event loop
     bool completionPending = false; // an async write's reconcile+notify hasn't run yet
 
     bool wantGlobals() const

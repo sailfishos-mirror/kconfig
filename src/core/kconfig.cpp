@@ -443,7 +443,7 @@ QMap<QString, QString> KConfig::entryMap(const QString &aGroup) const
     return theMap;
 }
 
-static bool writeConfigToBackends(const QByteArray &locale, KEntryMap &entries, bool readWrite, bool includeGlobals, KConfigIniBackend &local)
+static bool writeConfigToBackend(const QByteArray &locale, KEntryMap &entries, bool readWrite, bool includeGlobals, KConfigIniBackend &local)
 {
     bool writeGlobals = false;
     bool writeLocals = false;
@@ -525,7 +525,7 @@ bool KConfig::syncNow()
         }
 
         const bool readWrite = d->configState == ReadWrite;
-        d->bDirty = !writeConfigToBackends(locale().toUtf8(), d->entryMap, readWrite, d->wantGlobals(), d->mBackend);
+        d->bDirty = !writeConfigToBackend(locale().toUtf8(), d->entryMap, readWrite, d->wantGlobals(), d->mBackend);
     }
 
     // Notifying absolute paths is not supported and also makes no sense.
@@ -550,11 +550,10 @@ void KConfigPrivate::startAsyncWrite()
     const bool readWrite = configState == KConfigBase::ReadWrite;
     const bool includeGlobals = wantGlobals();
 
-    const QString localPath = mBackend.backingDevicePath();
+    auto workerBackend = std::make_shared<KConfigIniBackend>(mBackend.cloneDeviceForWorker());
 
-    syncWatcher.setFuture(QtConcurrent::run([snapshot = std::move(copy), utf8Locale, readWrite, includeGlobals, localPath]() mutable {
-        KConfigIniBackend local(std::make_unique<KConfigIniBackendPathDevice>(localPath));
-        return writeConfigToBackends(utf8Locale, snapshot, readWrite, includeGlobals, local);
+    syncWatcher.setFuture(QtConcurrent::run([snapshot = std::move(copy), utf8Locale, readWrite, includeGlobals, workerBackend]() mutable {
+        return writeConfigToBackend(utf8Locale, snapshot, readWrite, includeGlobals, *workerBackend);
     }));
 }
 
@@ -608,23 +607,6 @@ void KConfig::syncLater()
     }
 
     if (isImmutable() || !d->mBackend.isWritable()) {
-        return;
-    }
-
-    // for QIODevice backend
-    if (d->mBackend.backingDevicePath().isEmpty()) {
-        if (d->syncQueued) {
-            return;
-        }
-        d->syncQueued = true;
-        QMetaObject::invokeMethod(
-            &d->syncWatcher,
-            [this] {
-                Q_D(KConfig);
-                d->syncQueued = false;
-                syncNow();
-            },
-            Qt::QueuedConnection);
         return;
     }
 
