@@ -550,7 +550,7 @@ void KConfigPrivate::startAsyncWrite()
     const bool readWrite = configState == KConfigBase::ReadWrite;
     const bool includeGlobals = wantGlobals();
 
-    auto workerBackend = std::make_shared<KConfigIniBackend>(mBackend.cloneDeviceForWorker());
+    auto workerBackend = std::make_shared<KConfigIniBackend>(mBackend.clone());
 
     syncWatcher.setFuture(QtConcurrent::run([snapshot = std::move(copy), utf8Locale, readWrite, includeGlobals, workerBackend]() mutable {
         return writeConfigToBackend(utf8Locale, snapshot, readWrite, includeGlobals, *workerBackend);
